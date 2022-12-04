@@ -5,65 +5,8 @@ defmodule AdventOfCode2022.Day3 do
   @type rucksack :: [item()]
   @type bisected_rucksack :: {[item()], [item()]}
 
-  @item_priorities Map.new(
-                     Enum.with_index(
-                       [
-                         "a",
-                         "b",
-                         "c",
-                         "d",
-                         "e",
-                         "f",
-                         "g",
-                         "h",
-                         "i",
-                         "j",
-                         "k",
-                         "l",
-                         "m",
-                         "n",
-                         "o",
-                         "p",
-                         "q",
-                         "r",
-                         "s",
-                         "t",
-                         "u",
-                         "v",
-                         "w",
-                         "x",
-                         "y",
-                         "z",
-                         "A",
-                         "B",
-                         "C",
-                         "D",
-                         "E",
-                         "F",
-                         "G",
-                         "H",
-                         "I",
-                         "J",
-                         "K",
-                         "L",
-                         "M",
-                         "N",
-                         "O",
-                         "P",
-                         "Q",
-                         "R",
-                         "S",
-                         "T",
-                         "U",
-                         "V",
-                         "W",
-                         "X",
-                         "Y",
-                         "Z"
-                       ],
-                       1
-                     )
-                   )
+  @items ~w(a b c d e f g h i j k l m n o p q r s t u v w x y z A B C D E F G H I J K L M N O P Q R S T U V W X Y Z)
+  @item_priorities Map.new(Enum.with_index(@items, 1))
 
   def part_one() do
     read_lines!(trim: true)
