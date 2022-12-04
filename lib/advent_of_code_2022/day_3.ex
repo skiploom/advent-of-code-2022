@@ -68,22 +68,22 @@ defmodule AdventOfCode2022.Day3 do
   def part_one() do
     read_lines!(trim: true)
     |> bisect_rucksacks()
-    |> Enum.map(&find_misplaced/1)
+    |> Enum.map(&find_misplaced_item/1)
     |> sum_priorities()
   end
 
   def part_two() do
     read_lines!(trim: true)
     |> group_rucksacks()
-    |> Enum.map(&find_misplaced/1)
+    |> Enum.map(&find_misplaced_item/1)
     |> sum_priorities()
   end
 
-  @spec find_misplaced(bisected_rucksack()) :: item()
-  def find_misplaced({c1, c2} = _bisected_rucksack), do: find_misplaced([c1, c2])
+  @spec find_misplaced_item(bisected_rucksack()) :: item()
+  def find_misplaced_item({c1, c2}), do: find_misplaced_item([c1, c2])
 
-  @spec find_misplaced([rucksack()]) :: item()
-  def find_misplaced(rucksacks) do
+  @spec find_misplaced_item([rucksack()]) :: item()
+  def find_misplaced_item(rucksacks) do
     rucksacks
     |> Enum.map(&MapSet.new/1)
     |> intersection()

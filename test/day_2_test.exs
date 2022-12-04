@@ -18,15 +18,15 @@ defmodule Day2Test do
     end
   end
 
-  describe "parse_input_line/2" do
-    test "parses string into a round(), if answering question part 1" do
-      assert Day2.parse_input_line("C Z", :part_one) == {:scissors, :scissors}
-      assert Day2.parse_input_line("A Y", :part_one) == {:rock, :paper}
+  describe "parse_to_rounds/1" do
+    test "parses strings into round()s" do
+      assert Day2.parse_to_rounds(["C Z", "A Y"]) == [{:scissors, :scissors}, {:rock, :paper}]
     end
+  end
 
-    test "parses string into a round_outcome(), if answering question part 2" do
-      assert Day2.parse_input_line("C Z", :part_two) == {:scissors, :win}
-      assert Day2.parse_input_line("A Y", :part_two) == {:rock, :draw}
+  describe "parse_to_round_outcomes/1" do
+    test "parses strings into round_outcome()s" do
+      assert Day2.parse_to_round_outcomes(["C Z", "A Y"]) == [{:scissors, :win}, {:rock, :draw}]
     end
   end
 end
