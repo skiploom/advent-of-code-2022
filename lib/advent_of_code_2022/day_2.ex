@@ -76,6 +76,10 @@ defmodule AdventOfCode2022.Day2 do
     {opponent_move, your_move}
   end
 
+  @doc ~S"""
+      iex> AdventOfCode2022.Day2.parse_to_rounds(["A X", "B Z"])
+      [{:rock, :rock}, {:paper, :scissors}]
+  """
   def parse_to_rounds(lines) do
     Enum.map(lines, fn line ->
       [opponent, you] = String.split(line)
@@ -83,6 +87,10 @@ defmodule AdventOfCode2022.Day2 do
     end)
   end
 
+  @doc ~S"""
+      iex> AdventOfCode2022.Day2.parse_to_round_outcomes(["A X", "B Z"])
+      [{:rock, :lose}, {:paper, :win}]
+  """
   def parse_to_round_outcomes(lines) do
     Enum.map(lines, fn line ->
       [opponent, you] = String.split(line)

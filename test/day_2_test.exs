@@ -2,6 +2,7 @@ defmodule Day2Test do
   use ExUnit.Case
 
   alias AdventOfCode2022.Day2
+  doctest Day2
 
   describe "calculate_round_score/1" do
     test "totals score as expected" do
