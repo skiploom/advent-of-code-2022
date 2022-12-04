@@ -16,16 +16,21 @@ defmodule AdventOfCode2022.Day2 do
   @type question_part :: :part_one | :part_two
 
   def part_one() do
-    read!(:part_one)
-    |> Enum.map(&calculate_round_score/1)
-    |> Enum.sum()
+    read_lines!(trim: true)
+    |> parse_to_rounds()
+    |> sum_round_scores()
   end
 
   def part_two() do
-    read!(:part_two)
+    read_lines!(trim: true)
+    |> parse_to_round_outcomes()
     |> Enum.map(&round_outcome_to_round/1)
-    |> Enum.map(&calculate_round_score/1)
-    |> Enum.sum()
+    |> sum_round_scores()
+  end
+
+  @spec sum_round_scores([round()]) :: integer()
+  def sum_round_scores(rounds) do
+    Enum.reduce(rounds, 0, fn round, acc -> calculate_round_score(round) + acc end)
   end
 
   @spec calculate_round_score(round()) :: integer()
@@ -71,21 +76,18 @@ defmodule AdventOfCode2022.Day2 do
     {opponent_move, your_move}
   end
 
-  def read!(question_part) do
-    read_lines!(trim: true)
-    |> Enum.map(&parse_input_line(&1, question_part))
+  def parse_to_rounds(lines) do
+    Enum.map(lines, fn line ->
+      [opponent, you] = String.split(line)
+      {str_to_move(opponent), str_to_move(you)}
+    end)
   end
 
-  @spec parse_input_line(String.t(), question_part()) :: round() | round_outcome()
-  def parse_input_line(input_line, part) do
-    your_parse_fn =
-      case part do
-        :part_one -> &str_to_move/1
-        :part_two -> &str_to_outcome/1
-      end
-
-    [opponent, you] = String.split(input_line)
-    {str_to_move(opponent), your_parse_fn.(you)}
+  def parse_to_round_outcomes(lines) do
+    Enum.map(lines, fn line ->
+      [opponent, you] = String.split(line)
+      {str_to_move(opponent), str_to_outcome(you)}
+    end)
   end
 
   @spec str_to_move(String.t()) :: move()
