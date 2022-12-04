@@ -1,5 +1,5 @@
 defmodule Day1Test do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   test "given a list of lists of integers and a desired number n, returns the sums of the n-th greatest lists" do
     elf_food_bags = [[1, 2, 3], [70], [100, 200], [400, 20]]
