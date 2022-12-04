@@ -1,4 +1,6 @@
 defmodule AdventOfCode2022.Day2 do
+  use AdventOfCode2022.Solution
+
   @score_rock 1
   @score_paper 2
   @score_scissors 3
@@ -13,19 +15,17 @@ defmodule AdventOfCode2022.Day2 do
 
   @type question_part :: :part_one | :part_two
 
-  def answer() do
-    part1 =
-      read!(:part_one)
-      |> Enum.map(&calculate_round_score/1)
-      |> Enum.sum()
+  def part_one() do
+    read!(:part_one)
+    |> Enum.map(&calculate_round_score/1)
+    |> Enum.sum()
+  end
 
-    part2 =
-      read!(:part_two)
-      |> Enum.map(&round_outcome_to_round/1)
-      |> Enum.map(&calculate_round_score/1)
-      |> Enum.sum()
-
-    {part1, part2}
+  def part_two() do
+    read!(:part_two)
+    |> Enum.map(&round_outcome_to_round/1)
+    |> Enum.map(&calculate_round_score/1)
+    |> Enum.sum()
   end
 
   @spec calculate_round_score(round()) :: integer()
@@ -72,8 +72,7 @@ defmodule AdventOfCode2022.Day2 do
   end
 
   def read!(question_part) do
-    File.read!("inputs/day_2.txt")
-    |> String.split(~r{\n}, trim: true)
+    read_lines!(trim: true)
     |> Enum.map(&parse_input_line(&1, question_part))
   end
 

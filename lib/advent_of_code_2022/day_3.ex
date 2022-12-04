@@ -1,4 +1,6 @@
 defmodule AdventOfCode2022.Day3 do
+  use AdventOfCode2022.Solution
+
   @items Map.new(
            Enum.with_index(
              [
@@ -59,20 +61,18 @@ defmodule AdventOfCode2022.Day3 do
            )
          )
 
-  def answer() do
-    part1 =
-      read_lines!()
-      |> Enum.map(&parse_into_compartmentalized_rucksack/1)
-      |> Enum.map(&find_misplaced_item/1)
-      |> Enum.reduce(0, fn item, acc -> get_priority(item) + acc end)
+  def part_one() do
+    read_lines!(trim: true)
+    |> Enum.map(&parse_into_compartmentalized_rucksack/1)
+    |> Enum.map(&find_misplaced_item/1)
+    |> sum_priorities()
+  end
 
-    part2 =
-      read_lines!()
-      |> Enum.chunk_every(3)
-      |> Enum.map(&find_badge/1)
-      |> Enum.reduce(0, fn item, acc -> get_priority(item) + acc end)
-
-    {part1, part2}
+  def part_two() do
+    read_lines!(trim: true)
+    |> Enum.chunk_every(3)
+    |> Enum.map(&find_badge/1)
+    |> sum_priorities()
   end
 
   def find_misplaced_item({compartment1, compartment2}) do
@@ -96,6 +96,9 @@ defmodule AdventOfCode2022.Day3 do
 
   def get_priority(item), do: Map.get(@items, item)
 
+  def sum_priorities(items),
+    do: Enum.reduce(items, 0, fn item, acc -> get_priority(item) + acc end)
+
   # Boring parsing functions
   def parse_into_compartmentalized_rucksack(str),
     do: build_compartmentalized_rucksack(parse_line(str))
@@ -105,5 +108,4 @@ defmodule AdventOfCode2022.Day3 do
 
   def to_compartment(str), do: MapSet.new(String.split(str, "", trim: true))
   def parse_line(line), do: String.split_at(line, div(String.length(line), 2))
-  def read_lines!(), do: String.split(File.read!("inputs/day_3.txt"), "\n", trim: true)
 end
