@@ -1,5 +1,5 @@
 defmodule AdventOfCode2022.Solution do
-  @type answer :: integer()
+  @type answer :: integer() | String.t()
 
   @callback part_one() :: answer()
   @callback part_two() :: answer()
