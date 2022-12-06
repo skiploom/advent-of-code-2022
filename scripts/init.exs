@@ -5,9 +5,24 @@ defmodule Init do
     if File.exists?("lib/advent_of_code_2022/day_#{d}.ex") do
       raise "You've already created files for Day #{d}."
     else
-      File.write!("lib/advent_of_code_2022/day_#{d}.ex", solution_module_content(d))
-      File.write!("inputs/day_#{d}.txt", "")
-      File.write!("test/day_#{d}_test.exs", test_module_content(d))
+      solution_module_path = "lib/advent_of_code_2022/day_#{d}.ex"
+      inputs_file_path = "inputs/day_#{d}.txt"
+      test_module_path = "test/day_#{d}_test.exs"
+
+      File.write!(solution_module_path, solution_module_content(d))
+      File.write!(inputs_file_path, "")
+      File.write!(test_module_path, test_module_content(d))
+
+      IO.puts(~s"""
+      Three files have been created:
+
+      🌟 #{solution_module_path}
+      🌟 #{inputs_file_path}
+      🌟 #{test_module_path}
+
+
+      Good luck on Day #{d}!
+      """)
     end
   end
 
