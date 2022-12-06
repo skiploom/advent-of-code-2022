@@ -1,149 +1,70 @@
 defmodule AdventOfCode2022.Day5 do
   use AdventOfCode2022.Solution
 
-  @rearrangement_prefix "move"
+  @type crate :: String.t()
+  @type stack :: [crate()]
+  @type stacks :: %{(stack_number :: integer()) => stack()}
+  @type step :: map()
+  @type procedure :: [step()]
+
+  @step_prefix "move"
 
   def part_one() do
-    {crates, procedure} = parse_into_crates_and_rearrangement_procedure(read_lines!(trim: true))
-
-    stacks = build_crate_stacks(crates)
-    moves = Enum.map(procedure, &build_move/1)
-    reassigned_stacks = rearrange(moves, stacks)
-
-    generate_message(reassigned_stacks)
+    {stacks, procedure} = parse_into_stacks_and_procedure(read_lines!(trim: true))
+    rearranged_stacks = rearrange(procedure, stacks, &move_one_at_a_time/2)
+    generate_message(rearranged_stacks)
   end
 
   def part_two() do
-    {crates, procedure} = parse_into_crates_and_rearrangement_procedure(read_lines!(trim: true))
-
-    stacks = build_crate_stacks(crates)
-    moves = Enum.map(procedure, &build_move/1)
-    reassigned_stacks = rearrange9001(moves, stacks)
-
-    generate_message(reassigned_stacks)
+    {stacks, procedure} = parse_into_stacks_and_procedure(read_lines!(trim: true))
+    rearranged_stacks = rearrange(procedure, stacks, &move_all_at_once/2)
+    generate_message(rearranged_stacks)
   end
 
   def generate_message(stacks), do: Enum.join(get_tops(stacks))
 
   def get_tops(stacks) do
     stacks
-    |> Enum.sort_by(fn {k, _v} -> key_to_num(k) end)
+    |> Enum.sort_by(fn {k, _v} -> k end)
     |> Enum.map(fn {_k, v} -> hd(v) end)
   end
 
-  def key_to_num(str), do: String.to_integer(String.replace_prefix(str, "stack", ""))
+  @spec rearrange(procedure(), stacks(), move_fun :: (stacks(), step() -> stacks())) :: stacks()
+  def rearrange([], stacks, _), do: stacks
 
-  @doc ~S"""
-      iex> moves = [%{move: 1, from: 1, to: 2}, %{move: 2, from: 2, to: 1}]
-      ...> stacks = %{"stack1" => ["A", "B"], "stack2" => ["C"]}
-      ...> AdventOfCode2022.Day5.rearrange(moves, stacks)
-      %{"stack1" => ["C", "A", "B"], "stack2" => []}
-  """
-  def rearrange([], stacks), do: stacks
-
-  def rearrange([curr | rest] = _moves, stacks) do
-    rearrange(rest, do_move(curr, stacks))
+  def rearrange([current_step | next_steps], stacks, move_function) do
+    rearrange(next_steps, move_function.(stacks, current_step), move_function)
   end
 
-  def do_move(%{move: num_crates, from: source, to: destination}, stacks) do
-    source_stack = Map.get(stacks, "stack#{source}")
-    destination_stack = Map.get(stacks, "stack#{destination}")
+  def move_one_at_a_time(stacks, %{move: 0}), do: stacks
 
-    {new_source, new_destination} =
-      Enum.reduce(1..num_crates, {source_stack, destination_stack}, fn _n, {s, d} ->
-        [popped_crate | remaining_source_stack] = s
-        {remaining_source_stack, [popped_crate | d]}
-      end)
+  def move_one_at_a_time(stacks, %{move: num_crates, from: source, to: destination} = step) do
+    [crate_to_move | remaining_stack] = Map.get(stacks, source)
 
-    stacks
-    |> Map.put("stack#{source}", new_source)
-    |> Map.put("stack#{destination}", new_destination)
+    move_one_at_a_time(
+      %{
+        stacks
+        | source => remaining_stack,
+          destination => [crate_to_move | stacks[destination]]
+      },
+      %{step | move: num_crates - 1}
+    )
   end
 
-  @doc ~S"""
-      iex> moves = [%{move: 1, from: 1, to: 2}, %{move: 2, from: 2, to: 1}]
-      ...> stacks = %{"stack1" => ["A", "B"], "stack2" => ["C"]}
-      ...> AdventOfCode2022.Day5.rearrange9001(moves, stacks)
-      %{"stack1" => ["A", "C", "B"], "stack2" => []}
-  """
-  def rearrange9001([], stacks), do: stacks
-
-  def rearrange9001([curr | rest] = _moves, stacks) do
-    rearrange9001(rest, do_move9001(curr, stacks))
-  end
-
-  def do_move9001(%{move: num_crates, from: source, to: destination}, stacks) do
-    source_stack = Map.get(stacks, "stack#{source}")
-    destination_stack = Map.get(stacks, "stack#{destination}")
-
-    temp_stack = Enum.take(source_stack, num_crates)
-
-    {new_source, new_destination} = {source_stack -- temp_stack, temp_stack ++ destination_stack}
-
-    stacks
-    |> Map.put("stack#{source}", new_source)
-    |> Map.put("stack#{destination}", new_destination)
-  end
-
-  @doc ~S"""
-      iex> crate_strings = [
-      ...> "[A]    ",
-      ...> "[B] [C]",
-      ...> " 1   2 "
-      ...> ]
-      ...>
-      ...> AdventOfCode2022.Day5.build_crate_stacks(crate_strings)
-      %{"stack1" => ["A", "B"], "stack2" => ["C"]}
-  """
-  def build_crate_stacks(crate_strings) do
-    [num_stacks_line | crate_lines] = Enum.reverse(crate_strings)
-    num_stacks = get_number_of_stacks(num_stacks_line)
-    pattern = Regex.compile!(build_pattern(num_stacks))
-
-    init_map = Map.new(1..num_stacks, fn n -> {"stack#{n}", []} end)
-
-    Enum.reduce(crate_lines, init_map, fn crate_line, acc ->
-      Map.merge(Regex.named_captures(pattern, crate_line), acc, fn _k, v, v_acc ->
-        case v do
-          " " -> v_acc
-          crate -> [crate | v_acc]
-        end
-      end)
-    end)
-  end
-
-  @doc ~S"""
-      iex> AdventOfCode2022.Day5.build_move("move 1 from 1 to 2")
-      %{move: 1, from: 1, to: 2}
-  """
-  def build_move(step) do
-    [_move, num_crates, _from, source, _to, destination] = String.split(step, " ")
+  def move_all_at_once(stacks, %{move: num_crates, from: source, to: destination}) do
+    crates_to_move = Enum.take(Map.get(stacks, source), num_crates)
 
     %{
-      move: String.to_integer(num_crates),
-      from: String.to_integer(source),
-      to: String.to_integer(destination)
+      stacks
+      | source => stacks[source] -- crates_to_move,
+        destination => crates_to_move ++ stacks[destination]
     }
-  end
-
-  def get_number_of_stacks(str) do
-    Enum.max(Enum.map(String.split(str, " ", trim: true), &String.to_integer/1))
-  end
-
-  def crate_pattern_str(n), do: "\\W(?<stack#{n}>.)\\W"
-
-  def build_pattern(1), do: crate_pattern_str(1)
-
-  def build_pattern(num_stacks) when num_stacks > 1 do
-    Enum.reduce(2..num_stacks, build_pattern(1), fn n, acc ->
-      acc <> "\\s" <> crate_pattern_str(n)
-    end)
   end
 
   @doc ~S"""
   Parses the input strings into a two-element tuple,
-  where the first element is a list that illustrates the starting stacks of crates,
-  and the second element is a list of rearrangement directions.
+  where the first element is a map that illustrates the starting stacks of crates,
+  and the second element is a list of rearrangement steps.
 
       iex> input = [
       ...> "[A]    ",
@@ -153,10 +74,91 @@ defmodule AdventOfCode2022.Day5 do
       ...> "move 2 from 2 to 1"
       ...> ]
       ...>
-      ...> AdventOfCode2022.Day5.parse_into_crates_and_rearrangement_procedure(input)
-      {["[A]    ", "[B] [C]", " 1   2 "], ["move 1 from 1 to 2", "move 2 from 2 to 1"]}
+      ...> AdventOfCode2022.Day5.parse_into_stacks_and_procedure(input)
+      {%{1 => ["A", "B"], 2 => ["C"]}, [%{move: 1, from: 1, to: 2}, %{move: 2, from: 2, to: 1}]}
   """
-  def parse_into_crates_and_rearrangement_procedure(lines) do
-    Enum.split_with(lines, &(not String.starts_with?(&1, @rearrangement_prefix)))
+  def parse_into_stacks_and_procedure(lines) do
+    {stack_lines, procedure_lines} =
+      Enum.split_with(lines, &(not String.starts_with?(&1, @step_prefix)))
+
+    {build_stacks(stack_lines), build_steps(procedure_lines)}
+  end
+
+  @doc ~S"""
+      iex> stack_lines = [
+      ...> "[A]    ",
+      ...> "[B] [C]",
+      ...> " 1   2 "
+      ...> ]
+      ...>
+      ...> AdventOfCode2022.Day5.build_stacks(stack_lines)
+      %{1 => ["A", "B"], 2 => ["C"]}
+  """
+  def build_stacks(stack_lines) do
+    [num_stacks_line | crate_lines] = Enum.reverse(stack_lines)
+    num_stacks = get_number_of_stacks(num_stacks_line)
+    find_crates_pattern = Regex.compile!(build_pattern_str(num_stacks))
+    find_crates_function = &find_crates(&1, find_crates_pattern)
+
+    build_stacks(
+      crate_lines,
+      find_crates_function,
+      Map.new(1..num_stacks, fn stack_number -> {stack_number, []} end)
+    )
+  end
+
+  @spec build_stacks(
+          crate_lines :: [String.t()],
+          find_crates_fun :: (crate_line :: String.t() -> %{(stack_num :: integer()) => crate()}),
+          acc :: stacks()
+        ) :: stacks
+  def build_stacks([], _, acc), do: acc
+
+  def build_stacks([curr | next], finder, acc) do
+    build_stacks(next, finder, push_crates_to_stacks(acc, finder.(curr)))
+  end
+
+  @spec push_crates_to_stacks(stacks(), %{(stack_num :: integer()) => crate()}) :: stacks()
+  def push_crates_to_stacks(stacks, crates), do: Map.merge(crates, stacks, &push_crate_to_stack/3)
+
+  def push_crate_to_stack(_stack_number, " ", stack), do: stack
+  def push_crate_to_stack(_stack_number, crate, stack), do: [crate | stack]
+
+  def get_number_of_stacks(str) do
+    Enum.max(Enum.map(String.split(str, " ", trim: true), &String.to_integer/1))
+  end
+
+  def find_crates(crate_line, pattern) do
+    Map.new(Regex.named_captures(pattern, crate_line), &clean_key/1)
+  end
+
+  # Only used when parsing crate lines into stacks, because regex named capture groups must start with a string.
+  defp stack_prefix(), do: "stack"
+  defp clean_key({k, v}), do: {String.to_integer(String.replace_prefix(k, stack_prefix(), "")), v}
+
+  def crate_pattern_str(n), do: "\\W(?<#{stack_prefix()}#{n}>.)\\W"
+
+  def build_pattern_str(1), do: crate_pattern_str(1)
+
+  def build_pattern_str(num_stacks) when num_stacks > 1 do
+    Enum.reduce(2..num_stacks, build_pattern_str(1), fn n, acc ->
+      acc <> "\\s" <> crate_pattern_str(n)
+    end)
+  end
+
+  @doc ~S"""
+      iex> AdventOfCode2022.Day5.build_steps(["move 1 from 1 to 2", "move 2 from 2 to 1"])
+      [%{move: 1, from: 1, to: 2}, %{move: 2, from: 2, to: 1}]
+  """
+  def build_steps(procedure_lines), do: Enum.map(procedure_lines, &build_step/1)
+
+  def build_step(procedure_line) do
+    [_move, num_crates, _from, source, _to, destination] = String.split(procedure_line, " ")
+
+    %{
+      move: String.to_integer(num_crates),
+      from: String.to_integer(source),
+      to: String.to_integer(destination)
+    }
   end
 end
