@@ -4,7 +4,11 @@ defmodule AdventOfCode2022.Day5 do
   @type crate :: String.t()
   @type stack :: [crate()]
   @type stacks :: %{(stack_number :: integer()) => stack()}
-  @type step :: map()
+  @type step :: %{
+          required(:move) => integer(),
+          required(:from) => integer(),
+          required(:to) => integer()
+        }
   @type procedure :: [step()]
 
   @step_prefix "move"
