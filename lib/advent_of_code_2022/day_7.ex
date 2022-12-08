@@ -1,45 +1,66 @@
 defmodule AdventOfCode2022.Day7 do
   use AdventOfCode2022.Solution
 
+  @total_space_available 70_000_000
+  @space_needed_for_update 30_000_000
+
   def part_one() do
     read_lines!(trim: true)
-    |> process([], %{})
-    |> replace()
+    |> get_directories_total_sizes()
     |> Map.values()
-    |> Enum.map(&List.flatten/1)
-    |> Enum.map(&Enum.sum/1)
     |> Enum.filter(&(&1 < 100_000))
     |> Enum.sum()
   end
 
   def part_two() do
-    directory_sizes =
-      read_lines!(trim: true)
-      |> process([], %{})
-      |> replace()
-      |> Enum.map(fn {path, contents} -> {path, Enum.sum(List.flatten(contents))} end)
-      |> Map.new()
-
-    outermost_directory_size = Map.get(directory_sizes, ["/"])
-    unused_space = 70_000_000 - outermost_directory_size
-    needed_unused_space = 30_000_000
-    target = needed_unused_space - unused_space
+    directory_sizes = get_directories_total_sizes(read_lines!(trim: true))
+    outermost_dir_size = Map.get(directory_sizes, ["/"])
+    space_to_free_up = @space_needed_for_update - (@total_space_available - outermost_dir_size)
 
     directory_sizes
     |> Map.values()
-    |> Enum.filter(&(&1 >= target))
+    |> Enum.filter(&(&1 >= space_to_free_up))
     |> Enum.min()
   end
 
-  def process([], _, acc), do: acc
+  @doc """
+  Generates a map whose keys are every directory found in a filesystem,
+  and whose values are their total sizes
+  (i.e. the sums of the sizes of their files and of the files within their subdirectories),
+  based on a list of terminal output of some Elves changing directories and listing their contents.
 
-  def process([head | rest], curr, acc) do
-    {new_curr, new_acc} =
-      head
-      |> classify()
-      |> do_thing(curr, acc)
+      iex> terminal_output = ~s\"""
+      ...> $ cd /
+      ...> $ ls
+      ...> dir fooze
+      ...> 333 bat.bat
+      ...> $ cd fooze
+      ...> $ ls
+      ...> 100 foo.txt
+      ...> 200 bar.mp3
+      ...> \"""
+      ...> |> String.split("\\n", trim: true)
+      ...>
+      ...> AdventOfCode2022.Day7.get_directories_total_sizes(terminal_output)
+      %{["/"] => 633, ["/", "fooze"] => 300}
+  """
+  @spec get_directories_total_sizes(terminal_output :: [String.t()]) :: map()
+  def get_directories_total_sizes(output) do
+    output
+    |> parse_terminal_output({[], %{}})
+    |> replace_child_dirs_with_sizes()
+    |> Enum.map(fn {k, v} -> {k, Enum.sum(v)} end)
+    |> Map.new()
+  end
 
-    process(rest, new_curr, new_acc)
+  @spec parse_terminal_output(
+          terminal_output :: [String.t()],
+          {current_path :: [String.t()], acc :: map()}
+        ) :: map()
+  def parse_terminal_output([], {_, acc}), do: acc
+
+  def parse_terminal_output([curr | rest], path_and_acc) do
+    parse_terminal_output(rest, set_dirmap(classify(curr), path_and_acc))
   end
 
   def classify(cmd) do
@@ -52,32 +73,31 @@ defmodule AdventOfCode2022.Day7 do
     end
   end
 
-  def do_thing({:cd, :back}, curr, acc) do
-    {Enum.drop(curr, -1), acc}
+  def set_dirmap({:cd, :back}, {path, acc}), do: {Enum.drop(path, -1), acc}
+  def set_dirmap({:cd, d}, {path, acc}), do: {path ++ [d], Map.put_new(acc, path ++ [d], [])}
+  def set_dirmap(:ls, {path, acc}), do: {path, acc}
+  def set_dirmap({:dir, d}, {path, acc}), do: {path, Map.update(acc, path, [d], &[d | &1])}
+  def set_dirmap({:file, s}, {path, acc}), do: {path, Map.update(acc, path, [s], &[s | &1])}
+
+  def replace_child_dirs_with_sizes(dirmap) do
+    Enum.map(dirmap, &replace_and_flatten(&1, dirmap))
   end
 
-  def do_thing({:cd, d}, curr, acc), do: {curr ++ [d], Map.put_new(acc, curr ++ [d], [])}
-  def do_thing(:ls, curr, acc), do: {curr, acc}
-  def do_thing({:dir, d}, curr, acc), do: {curr, Map.update(acc, curr, [d], &[d | &1])}
-  def do_thing({:file, s}, curr, acc), do: {curr, Map.update(acc, curr, [s], &[s | &1])}
-
-  def replace(map) do
-    Map.new(Enum.map(map, &replace(&1, map)))
+  def replace_and_flatten({path, contents}, dirmap) do
+    {path, List.flatten(Enum.map(contents, &parse_content(&1, path, dirmap)))}
   end
 
-  def replace({path, contents}, map) do
-    {path, Enum.map(contents, &do_replace(&1, path, map))}
-  end
-
-  def do_replace(str, path, map) when is_binary(str) do
-    case Integer.parse(str) do
-      {int, _} -> int
-      :error -> get_thingy(str, path, map)
+  def parse_content(content, path, dirmap) do
+    case Integer.parse(content) do
+      {filesize, _} -> filesize
+      :error -> parse_nested_directory(content, path, dirmap)
     end
   end
 
-  def get_thingy(dir, path, map) do
-    Map.get(map, path ++ [dir])
-    |> Enum.map(&do_replace(&1, path ++ [dir], map))
+  def parse_nested_directory(dir, path, dirmap) do
+    directory_path = path ++ [dir]
+    directory_contents = Map.get(dirmap, directory_path)
+
+    Enum.map(directory_contents, &parse_content(&1, directory_path, dirmap))
   end
 end
