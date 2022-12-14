@@ -1,6 +1,9 @@
 defmodule AdventOfCode2022.Day12 do
   use AdventOfCode2022.Solution
 
+  @default_start_height "S"
+  @default_goal_height "E"
+
   @type position :: {x :: integer(), y :: integer()}
   @type height :: String.t()
   @type heightmap :: %{required(:position) => height()}
@@ -34,6 +37,10 @@ defmodule AdventOfCode2022.Day12 do
   end
 
   def part_two() do
+    read_lines!(trim: true)
+    |> parse_into_states_with_multiple_starting_points()
+    |> Enum.map(&find_shortest_path/1)
+    |> Enum.min()
   end
 
   def find_shortest_path(state) do
@@ -225,6 +232,7 @@ defmodule AdventOfCode2022.Day12 do
 
   # Input parsing functions
 
+  # Part 1 specific parser
   @spec parse_into_state([String.t()]) :: state()
   def parse_into_state(input_lines) do
     constants = parse_into_constants(input_lines)
@@ -259,8 +267,8 @@ defmodule AdventOfCode2022.Day12 do
     parse_into_constants([row | cols], row_num, col_num + 1, heightmap, start, goal)
   end
 
-  def starting_position?(start, height), do: is_nil(start) and height == "S"
-  def goal_position?(goal, height), do: is_nil(goal) and height == "E"
+  def starting_position?(start, height), do: is_nil(start) and height == @default_start_height
+  def goal_position?(goal, height), do: is_nil(goal) and height == @default_goal_height
 
   @spec build_acc(constants()) :: acc()
   def build_acc(%{heightmap: heightmap}) do
@@ -276,4 +284,49 @@ defmodule AdventOfCode2022.Day12 do
   end
 
   def build_row(), do: %{distance: :unknown, previous: :unknown}
+
+  # Part 2 specific parser
+  def parse_into_states_with_multiple_starting_points(input_lines) do
+    # JankyAF algo:
+    # 1. Call the Part 1 parser. It'll return a state() with the starting position at height "S".
+    # 2. From that state, find all of the positions where height is "a".
+    # 3. From that find, there will be SO MANY positions where height is "a" and so many of them
+    #    will be either:
+    #       a) unviable (i.e. can't even visit a neighbor, because it's surrounded by too-high "c"s)
+    #       b) redundant (i.e. its only visitable neighbor is "a", so that will already add an extra step)
+    #    So reject those positions from the list of viable a_positions.
+    # 4. For those remaining positions, create a list of state()s where start == that position.
+    # 5. Return that list.
+    state = parse_into_state(input_lines)
+
+    heightmap(state)
+    |> find_viable_starting_positions()
+    |> Enum.map(fn position -> put_in(state, [:constants, :start], position) end)
+  end
+
+  @spec find_viable_starting_positions(heightmap()) :: [position()]
+  def find_viable_starting_positions(heightmap) do
+    heightmap
+    |> Enum.filter(fn {position, _height} -> viable?(heightmap, position) end)
+    |> Enum.map(fn {k, _v} -> k end)
+  end
+
+  def viable?(heightmap, position) do
+    lowest_elevation?(heightmap[position]) and
+      neighbors_visitable_and_higher?(heightmap, position)
+  end
+
+  def lowest_elevation?(height), do: height in ["S", "a"]
+
+  def neighbors_visitable_and_higher?(heightmap, position) do
+    get_neighbors_heights(heightmap, position)
+    |> Enum.filter(fn {_position, height} ->
+      neighbor_visitable_and_higher?(heightmap[position], height)
+    end)
+    |> Enum.map(fn {position, _height} -> position end)
+  end
+
+  def neighbor_visitable_and_higher?(current_height, neighbor_height) do
+    height_value(current_height) + 1 == height_value(neighbor_height)
+  end
 end
