@@ -19,50 +19,8 @@ defmodule AdventOfCode2022.Day11 do
   end
 
   def part_two() do
-    read_lines!()
-    |> parse_into_monkeys()
-    |> build_monkeys_map()
-    |> simulate_rounds(10_000, &monkey_deux/2)
-    |> get_two_most_active_monkeys()
-    |> calculate_monkey_business()
-  end
-
-  def example() do
-    """
-    Monkey 0:
-    Starting items: 79, 98
-    Operation: new = old * 19
-    Test: divisible by 23
-     If true: throw to monkey 2
-     If false: throw to monkey 3
-
-    Monkey 1:
-    Starting items: 54, 65, 75, 74
-    Operation: new = old + 6
-    Test: divisible by 19
-     If true: throw to monkey 2
-     If false: throw to monkey 0
-
-    Monkey 2:
-    Starting items: 79, 60, 97
-    Operation: new = old * old
-    Test: divisible by 13
-     If true: throw to monkey 1
-     If false: throw to monkey 3
-
-    Monkey 3:
-    Starting items: 74
-    Operation: new = old + 3
-    Test: divisible by 17
-     If true: throw to monkey 0
-     If false: throw to monkey 1
-    """
-    |> String.split("\n")
-    |> parse_into_monkeys()
-    |> build_monkeys_map()
-    |> simulate_rounds(20, &monkey_deux/2)
-    |> get_two_most_active_monkeys()
-    |> calculate_monkey_business()
+    # I haven't completed part 2 yet. :(
+    # I know it involves modulo stuff in some fashion.
   end
 
   def calculate_monkey_business(monkeys) do
@@ -99,24 +57,6 @@ defmodule AdventOfCode2022.Day11 do
     new_worry_level = bore_monkey(curr)
     recipient_name = monkey_befriend(monkey, new_worry_level)
     monkey_do(fling(monkeys_map, monkey.name, recipient_name, new_worry_level), drop_item(monkey))
-  end
-
-  @doc """
-  Legit just a copy of monkey_do/2, just without the call to bore_monkey/2.
-  This is to have a quick answer to part 2 of the puzzle.
-  I'm sure there's a cleaner way but I'm lazy.
-  """
-  def monkey_deux(monkeys_map, %{items: []}), do: monkeys_map
-
-  def monkey_deux(monkeys_map, %{items: [curr | _]} = monkey) do
-    {monkey, new_worry_level} = monkey_see(monkey, curr)
-    monkeys_map = Map.put(monkeys_map, monkey.name, monkey)
-    recipient_name = monkey_befriend(monkey, new_worry_level)
-
-    monkey_deux(
-      fling(monkeys_map, monkey.name, recipient_name, new_worry_level),
-      drop_item(monkey)
-    )
   end
 
   def monkey_see(%{operation: op, inspect_count: count} = monkey, worry_level) do
@@ -177,7 +117,6 @@ defmodule AdventOfCode2022.Day11 do
   def maybe_finish_monkey(map), do: map
 
   def parse_into_monkey_attr(input_line) do
-    # ~w(name items operation test true_recipient false_recipient)a
     case String.split(String.replace(input_line, [":", ","], ""), " ", trim: true) do
       ["Monkey", name] -> {:name, String.to_integer(name)}
       ["Starting", "items" | items] -> {:items, parse_into_items(items)}
