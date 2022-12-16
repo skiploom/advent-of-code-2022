@@ -69,6 +69,6 @@ defmodule Day13Test do
     end
   end
 
-  defp assert_less(result), do: result == :lt
-  defp assert_greater(result), do: result == :gt
+  defp assert_less(result), do: assert(result == :lt)
+  defp assert_greater(result), do: assert(result == :gt)
 end
