@@ -22,67 +22,6 @@ defmodule Day15Test do
     end
   end
 
-  describe "draw_map/1" do
-    test "returns a map whose keys are positions, and values are what info is known (if any) about that position" do
-      #     0 2 4
-      # -1 .#...#.
-      #  0 #SB.#SB
-      #  1 .#...#.
-      sensors = [{0, 0}, {4, 0}]
-      beacons = [{1, 0}, {5, 0}]
-      non_beacons = [{-1, 0}, {0, -1}, {0, 1}, {3, 0}, {4, -1}, {4, 1}]
-
-      unknown = [
-        {-1, -1},
-        {-1, 1},
-        {1, -1},
-        {1, 1},
-        {2, -1},
-        {2, 0},
-        {2, 1},
-        {3, -1},
-        {3, 1},
-        {5, -1},
-        {5, 1}
-      ]
-
-      pairs = Enum.zip(sensors, beacons)
-
-      expected =
-        []
-        |> Enum.concat(Enum.map(sensors, fn position -> {position, :sensor} end))
-        |> Enum.concat(Enum.map(beacons, fn position -> {position, :beacon} end))
-        |> Enum.concat(Enum.map(non_beacons, fn position -> {position, :empty} end))
-        |> Enum.concat(Enum.map(unknown, fn position -> {position, :unknown} end))
-        |> Map.new()
-
-      assert expected == Day15.draw_map(pairs)
-    end
-  end
-
-  describe "get_positions_around/2" do
-    test "returns a list of positions within a given distance away from the given origin" do
-      expected = [
-        {0, -2},
-        {-1, -1},
-        {0, -1},
-        {1, -1},
-        {-2, 0},
-        {-1, 0},
-        {1, 0},
-        {2, 0},
-        {-1, 1},
-        {0, 1},
-        {1, 1},
-        {0, 2}
-      ]
-
-      actual = Day15.get_positions_around({0, 0}, 2)
-      assert is_list(actual)
-      assert Enum.empty?(expected -- actual)
-    end
-  end
-
   def example() do
     """
     Sensor at x=2, y=18: closest beacon is at x=-2, y=15
